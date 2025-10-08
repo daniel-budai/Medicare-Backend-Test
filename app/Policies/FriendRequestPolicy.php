@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\FriendRequestStatus;
 use App\Models\FriendRequest;
 use App\Models\User;
 
@@ -12,7 +13,8 @@ class FriendRequestPolicy
      */
     public function accept(User $user, FriendRequest $friendRequest): bool
     {
-        return $friendRequest->receiver_id === $user->id;
+        return $friendRequest->receiver_id === $user->id
+            && $friendRequest->status === FriendRequestStatus::PENDING;
     }
 
     /**
@@ -20,7 +22,9 @@ class FriendRequestPolicy
      */
     public function reject(User $user, FriendRequest $friendRequest): bool
     {
-        return $friendRequest->receiver_id === $user->id;
+        return $friendRequest->receiver_id === $user->id
+            && $friendRequest->status === FriendRequestStatus::PENDING;
     }
 }
+
 

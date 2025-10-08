@@ -17,14 +17,23 @@ class FriendService
      * @param User $sender
      * @param int $receiverId
      * @return FriendRequest
-     * @throws \Exception
      */
     public function sendFriendRequest(User $sender, int $receiverId): FriendRequest
     {
+        // Check if receiver exists and is active
+        $receiver = User::active()->find($receiverId);
+        abort_unless(
+            $receiver !== null,
+            404,
+            'User not found.'
+        );
+
         // Check if users are already friends
-        if ($this->areFriends($sender->id, $receiverId)) {
-            throw new \Exception('Users are already friends.');
-        }
+        abort_if(
+            $this->areFriends($sender->id, $receiverId),
+            409,
+            'Users are already friends.'
+        );
 
         // Check if there's already a pending request
         $existingRequest = FriendRequest::where(function ($query) use ($sender, $receiverId) {
@@ -36,15 +45,20 @@ class FriendService
         })->where('status', FriendRequestStatus::PENDING)
             ->first();
 
-        if ($existingRequest) {
-            throw new \Exception('A friend request already exists between these users.');
-        }
+        abort_if(
+            $existingRequest !== null,
+            409,
+            'A pending friend request already exists with this user.'
+        );
 
-        return FriendRequest::create([
+        $friendRequest = FriendRequest::create([
             'sender_id' => $sender->id,
             'receiver_id' => $receiverId,
             'status' => FriendRequestStatus::PENDING,
         ]);
+
+        // Return with relationships loaded
+        return $friendRequest->load(['sender', 'receiver']);
     }
 
     /**
@@ -67,12 +81,9 @@ class FriendService
      *
      * @param FriendRequest $friendRequest
      * @return void
-     * @throws \Exception
      */
     public function acceptFriendRequest(FriendRequest $friendRequest): void
     {
-        $this->ensurePending($friendRequest);
-
         DB::transaction(function () use ($friendRequest) {
             // Update friend request status
             $friendRequest->update(['status' => FriendRequestStatus::ACCEPTED]);
@@ -95,12 +106,9 @@ class FriendService
      *
      * @param FriendRequest $friendRequest
      * @return void
-     * @throws \Exception
      */
     public function rejectFriendRequest(FriendRequest $friendRequest): void
     {
-        $this->ensurePending($friendRequest);
-
         $friendRequest->update(['status' => FriendRequestStatus::REJECTED]);
     }
 
@@ -127,20 +135,6 @@ class FriendService
         return Friendship::where('user_id', $userId1)
             ->where('friend_id', $userId2)
             ->exists();
-    }
-
-    /**
-     * Ensure the friend request is still pending.
-     *
-     * @param FriendRequest $friendRequest
-     * @return void
-     * @throws \Exception
-     */
-    private function ensurePending(FriendRequest $friendRequest): void
-    {
-        if ($friendRequest->status !== FriendRequestStatus::PENDING) {
-            throw new \Exception('This friend request has already been processed.');
-        }
     }
 }
 

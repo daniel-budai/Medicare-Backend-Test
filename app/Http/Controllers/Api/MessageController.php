@@ -25,22 +25,16 @@ class MessageController extends Controller
      */
     public function send(SendMessageRequest $request): JsonResponse
     {
-        try {
-            $message = $this->messageService->sendMessage(
-                $request->user(),
-                $request->receiver_id,
-                $request->message
-            );
+        $message = $this->messageService->sendMessage(
+            $request->user(),
+            $request->receiver_id,
+            $request->message
+        );
 
-            return response()->json([
-                'message' => 'Message sent successfully.',
-                'data' => new MessageResource($message->load(['sender', 'receiver'])),
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], 400);
-        }
+        return response()->json([
+            'message' => 'Message sent successfully.',
+            'data' => new MessageResource($message),
+        ], 201);
     }
 
     /**
@@ -48,25 +42,17 @@ class MessageController extends Controller
      *
      * @param ListMessagesRequest $request
      * @param int $friendId
-     * @return AnonymousResourceCollection|JsonResponse
+     * @return AnonymousResourceCollection
      */
-    public function index(ListMessagesRequest $request, int $friendId): AnonymousResourceCollection|JsonResponse
+    public function index(ListMessagesRequest $request, int $friendId): AnonymousResourceCollection
     {
-        try {
-            $perPage = $request->input('per_page', 20);
+        $messages = $this->messageService->getMessagesBetweenUsers(
+            $request->user(),
+            $friendId,
+            $request->input('per_page')
+        );
 
-            $messages = $this->messageService->getMessagesBetweenUsers(
-                $request->user(),
-                $friendId,
-                $perPage
-            );
-
-            return MessageResource::collection($messages);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], 400);
-        }
+        return MessageResource::collection($messages);
     }
 }
 

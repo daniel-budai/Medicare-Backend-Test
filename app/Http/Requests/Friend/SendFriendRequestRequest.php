@@ -22,7 +22,12 @@ class SendFriendRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'receiver_id' => ['required', 'integer', 'exists:users,id', 'different:' . $this->user()?->id],
+            'receiver_id' => [
+                'required',
+                'integer',
+                'exists:users,id',
+                'not_in:' . $this->user()?->id, //not to yourself
+            ],
         ];
     }
 
@@ -34,7 +39,7 @@ class SendFriendRequestRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'receiver_id.different' => 'You cannot send a friend request to yourself.',
+            'receiver_id.not_in' => 'You cannot send a friend request to yourself.',
         ];
     }
 }

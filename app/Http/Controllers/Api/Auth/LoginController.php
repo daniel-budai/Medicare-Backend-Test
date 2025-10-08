@@ -24,17 +24,15 @@ class LoginController extends Controller
      */
     public function __invoke(LoginRequest $request): JsonResponse
     {
-        if (!Auth::attempt($request->validated())) {
+        $user = $this->authService->attemptLogin($request->validated());
+
+        if (!$user) {
             return response()->json([
                 'message' => 'Invalid credentials.',
             ], 401);
         }
 
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
         try {
-            // Service handles email verification check
             $token = $this->authService->createToken($user);
 
             return response()->json([
@@ -48,7 +46,7 @@ class LoginController extends Controller
             return response()->json([
                 'message' => $e->getMessage(),
                 'errors' => $e->errors(),
-                'email' => $user->email, // Frontend can use this to auto-populate resend form
+                'email' => $user->email,
             ], $e->status);
         }
     }

@@ -16,7 +16,7 @@ class UserService
      */
     public function getActiveUsers(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = User::whereNotNull('email_verified_at');
+        $query = User::active();
 
         // Filter by name if provided
         if (!empty($filters['name'])) {
@@ -39,7 +39,7 @@ class UserService
      */
     public function findActiveUser(int $userId): ?User
     {
-        return User::whereNotNull('email_verified_at')->find($userId);
+        return User::active()->find($userId);
     }
 }
 

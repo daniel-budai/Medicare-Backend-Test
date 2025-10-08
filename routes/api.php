@@ -32,15 +32,15 @@ Route::get('email/verify/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['signed', 'throttle:6,1'])
     ->name('verification.verify');
 
+// Resend verification email (public with heavy throttling)
+Route::post('email/resend-verification', ResendVerificationEmailController::class)
+    ->middleware('throttle:3,1')
+    ->name('verification.send');
+
 // Protected routes - Require authentication
 Route::middleware(['auth:sanctum'])->group(function () {
     // Logout
     Route::post('auth/logout', LogoutController::class);
-
-    // Resend verification email
-    Route::post('email/verification-notification', ResendVerificationEmailController::class)
-        ->middleware('throttle:6,1')
-        ->name('verification.send');
 
     // Protected routes - Require email verification
     Route::middleware(['verified'])->group(function () {

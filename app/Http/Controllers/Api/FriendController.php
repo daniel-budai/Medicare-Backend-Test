@@ -8,7 +8,6 @@ use App\Http\Resources\FriendRequestResource;
 use App\Http\Resources\UserResource;
 use App\Models\FriendRequest;
 use App\Services\Friend\FriendService;
-use App\Services\User\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -16,8 +15,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class FriendController extends Controller
 {
     public function __construct(
-        protected FriendService $friendService,
-        protected UserService $userService
+        protected FriendService $friendService
     ) {
     }
 
@@ -29,29 +27,15 @@ class FriendController extends Controller
      */
     public function sendRequest(SendFriendRequestRequest $request): JsonResponse
     {
-        try {
-            $receiver = $this->userService->findActiveUser($request->receiver_id);
+        $friendRequest = $this->friendService->sendFriendRequest(
+            $request->user(),
+            $request->receiver_id
+        );
 
-            if (!$receiver) {
-                return response()->json([
-                    'message' => 'The user you are trying to add is not active.',
-                ], 400);
-            }
-
-            $friendRequest = $this->friendService->sendFriendRequest(
-                $request->user(),
-                $request->receiver_id
-            );
-
-            return response()->json([
-                'message' => 'Friend request sent successfully.',
-                'friend_request' => new FriendRequestResource($friendRequest->load(['sender', 'receiver'])),
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], 400);
-        }
+        return response()->json([
+            'message' => 'Friend request sent successfully.',
+            'friend_request' => new FriendRequestResource($friendRequest),
+        ], 201);
     }
 
     /**
@@ -70,49 +54,35 @@ class FriendController extends Controller
     /**
      * Accept a friend request.
      *
-     * @param Request $request
      * @param FriendRequest $friendRequest
      * @return JsonResponse
      */
-    public function acceptRequest(Request $request, FriendRequest $friendRequest): JsonResponse
+    public function acceptRequest(FriendRequest $friendRequest): JsonResponse
     {
         $this->authorize('accept', $friendRequest);
 
-        try {
-            $this->friendService->acceptFriendRequest($friendRequest);
+        $this->friendService->acceptFriendRequest($friendRequest);
 
-            return response()->json([
-                'message' => 'Friend request accepted.',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], 400);
-        }
+        return response()->json([
+            'message' => 'Friend request accepted.',
+        ]);
     }
 
     /**
      * Reject a friend request.
      *
-     * @param Request $request
      * @param FriendRequest $friendRequest
      * @return JsonResponse
      */
-    public function rejectRequest(Request $request, FriendRequest $friendRequest): JsonResponse
+    public function rejectRequest(FriendRequest $friendRequest): JsonResponse
     {
         $this->authorize('reject', $friendRequest);
 
-        try {
-            $this->friendService->rejectFriendRequest($friendRequest);
+        $this->friendService->rejectFriendRequest($friendRequest);
 
-            return response()->json([
-                'message' => 'Friend request rejected.',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], 400);
-        }
+        return response()->json([
+            'message' => 'Friend request rejected.',
+        ]);
     }
 
     /**

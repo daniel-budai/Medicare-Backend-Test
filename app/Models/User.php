@@ -49,6 +49,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Scope a query to only include active (verified) users.
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereNotNull('email_verified_at');
+    }
+
+    /**
      * Get the friend requests sent by the user.
      */
     public function sentFriendRequests(): HasMany
